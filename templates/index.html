@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IELTS Score Analyzer - AI Document Summarizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a5f;
+            --secondary: #3d5a80;
+            --accent: #ee6c4d;
+            --accent-light: #f4a261;
+            --light: #e0fbfc;
+            --dark: #293241;
+            --success: #2a9d8f;
+            --warning: #e9c46a;
+            --danger: #e76f51;
+            --gradient-1: linear-gradient(135deg, #1e3a5f 0%, #3d5a80 50%, #98c1d9 100%);
+            --gradient-2: linear-gradient(135deg, #ee6c4d 0%, #f4a261 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: var(--gradient-1);
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        .bg-shapes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-shapes::before,
+        .bg-shapes::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .bg-shapes::before {
+            width: 600px;
+            height: 600px;
+            background: rgba(238, 108, 77, 0.1);
+            top: -200px;
+            right: -200px;
+        }
+
+        .bg-shapes::after {
+            width: 400px;
+            height: 400px;
+            background: rgba(244, 162, 97, 0.1);
+            bottom: -100px;
+            left: -100px;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(20px, 20px) rotate(5deg); }
+            50% { transform: translate(0, 40px) rotate(0deg); }
+            75% { transform: translate(-20px, 20px) rotate(-5deg); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--light);
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .api-badge {
+            display: inline-block;
+            background: var(--success);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            padding: 35px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 28px;
+            background: var(--gradient-2);
+            border-radius: 2px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: var(--secondary);
+            margin-bottom: 8px;
+        }
+
+        .skill-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .listening-icon { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .speaking-icon { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .reading-icon { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .writing-icon { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(238, 108, 77, 0.1);
+        }
+
+        .student-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 25px;
+            border-bottom: 2px dashed #e0e0e0;
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .toggle-group label {
+            font-weight: 600;
+            color: var(--secondary);
+        }
+
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        .toggle input:checked + .toggle-slider {
+            background: var(--gradient-2);
+        }
+
+        .toggle input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px 30px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: var(--gradient-2);
+            color: white;
+            box-shadow: 0 8px 25px rgba(238, 108, 77, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(238, 108, 77, 0.5);
+        }
+
+        .btn-secondary {
+            background: var(--light);
+            color: var(--primary);
+            margin-top: 12px;
+        }
+
+        .results-card {
+            display: none;
+        }
+
+        .results-card.show {
+            display: block;
+        }
+
+        .overall-score {
+            text-align: center;
+            padding: 30px;
+            background: var(--gradient-1);
+            border-radius: 16px;
+            margin-bottom: 25px;
+            color: white;
+        }
+
+        .overall-score .score {
+            font-size: 4rem;
+            font-weight: 700;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .skills-chart {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .skill-bar {
+            text-align: center;
+            padding: 15px 10px;
+            border-radius: 12px;
+            background: #f5f5f5;
+        }
+
+        .skill-bar .name { font-size: 0.85rem; color: #666; margin-bottom: 8px; }
+        .skill-bar .value { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+
+        .summary-section {
+            margin-bottom: 20px;
+        }
+
+        .summary-section h3 {
+            font-size: 1.1rem;
+            color: var(--primary);
+            margin-bottom: 12px;
+        }
+
+        .summary-box {
+            padding: 18px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            border-left: 4px solid var(--accent);
+        }
+
+        .list-item {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            line-height: 1.5;
+        }
+
+        .strength-item {
+            background: rgba(42, 157, 143, 0.1);
+            border: 1px solid rgba(42, 157, 143, 0.2);
+        }
+
+        .weakness-item {
+            background: rgba(231, 111, 81, 0.1);
+            border: 1px solid rgba(231, 111, 81, 0.2);
+        }
+
+        .rec-item {
+            background: rgba(61, 90, 128, 0.1);
+            border: 1px solid rgba(61, 90, 128, 0.2);
+        }
+
+        .action-items {
+            background: linear-gradient(135deg, #ffecd2, #fcb69f);
+            padding: 20px;
+            border-radius: 14px;
+            margin-top: 20px;
+        }
+
+        .llm-analysis {
+            background: linear-gradient(135deg, #e0c3fc, #8ec5fc);
+            padding: 20px;
+            border-radius: 14px;
+            margin-top: 20px;
+        }
+
+        .llm-analysis h4 {
+            margin-bottom: 15px;
+        }
+
+        .llm-analysis pre {
+            white-space: pre-wrap;
+            font-family: inherit;
+            line-height: 1.6;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.show { display: block; }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e0e0e0;
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 900px) {
+            .main-content { grid-template-columns: 1fr; }
+            h1 { font-size: 2.2rem; }
+            .skills-chart { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-shapes"></div>
+    
+    <div class="container">
+        <header>
+            <h1>🎓 IELTS Score Analyzer</h1>
+            <p class="subtitle">AI-Powered Document Summarizer & Learning Recommendations</p>
+            <span class="api-badge">🔌 API Backend Connected</span>
+        </header>
+
+        <div class="main-content">
+            <div class="card input-card">
+                <h2 class="card-title">Nhập Điểm IELTS</h2>
+                
+                <form id="ieltsForm">
+                    <div class="student-info">
+                        <input type="text" id="studentName" placeholder="Tên học viên" required>
+                        <input type="text" id="studentId" placeholder="Mã học viên (tùy chọn)">
+                    </div>
+
+                    <div class="input-group">
+                        <label><span class="skill-icon listening-icon">🎧</span> Listening (Nghe)</label>
+                        <input type="number" id="listening" min="0" max="9" step="0.5" placeholder="0 - 9" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label><span class="skill-icon speaking-icon">🗣️</span> Speaking (Nói)</label>
+                        <input type="number" id="speaking" min="0" max="9" step="0.5" placeholder="0 - 9" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label><span class="skill-icon reading-icon">📖</span> Reading (Đọc)</label>
+                        <input type="number" id="reading" min="0" max="9" step="0.5" placeholder="0 - 9" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label><span class="skill-icon writing-icon">✍️</span> Writing (Viết)</label>
+                        <input type="number" id="writing" min="0" max="9" step="0.5" placeholder="0 - 9" required>
+                    </div>
+
+                    <div class="toggle-group">
+                        <label>🤖 Sử dụng AI Analysis (GPT-4/Claude)</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="useLLM">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <span>🔍</span> Phân Tích & Đánh Giá
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                        <span>🔄</span> Làm Mới
+                    </button>
+                </form>
+            </div>
+
+            <div class="card results-card" id="resultsCard">
+                <h2 class="card-title">Kết Quả Phân Tích</h2>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Đang phân tích dữ liệu...</p>
+                </div>
+
+                <div id="resultsContent" style="display: none;">
+                    <div class="overall-score">
+                        <div class="label">Điểm Tổng Thể</div>
+                        <div class="score" id="overallValue">0.0</div>
+                        <div id="bandDesc"></div>
+                    </div>
+
+                    <div class="skills-chart" id="skillsChart"></div>
+
+                    <div class="summary-section">
+                        <h3>📋 Tóm Tắt Đánh Giá</h3>
+                        <div class="summary-box"><p id="summaryText"></p></div>
+                    </div>
+
+                    <div class="summary-section">
+                        <h3>💪 Điểm Mạnh</h3>
+                        <div id="strengthsList"></div>
+                    </div>
+
+                    <div class="summary-section">
+                        <h3>📉 Điểm Cần Cải Thiện</h3>
+                        <div id="weaknessesList"></div>
+                    </div>
+
+                    <div class="summary-section">
+                        <h3>🎯 Đề Xuất Cải Thiện</h3>
+                        <div id="recommendationsList"></div>
+                    </div>
+
+                    <div class="action-items">
+                        <h4>📌 Kế Hoạch Hành Động</h4>
+                        <div id="actionList"></div>
+                    </div>
+
+                    <div class="llm-analysis" id="llmSection" style="display: none;">
+                        <h4>🤖 Phân Tích AI</h4>
+                        <pre id="llmText"></pre>
+                    </div>
+
+                    <button class="btn btn-primary" style="margin-top: 20px;" onclick="exportReport()">
+                        <span>📥</span> Xuất Báo Cáo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAnalysis = null;
+
+        document.getElementById('ieltsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const data = {
+                student_name: document.getElementById('studentName').value,
+                listening: parseFloat(document.getElementById('listening').value),
+                speaking: parseFloat(document.getElementById('speaking').value),
+                reading: parseFloat(document.getElementById('reading').value),
+                writing: parseFloat(document.getElementById('writing').value),
+                use_llm: document.getElementById('useLLM').checked
+            };
+
+            const resultsCard = document.getElementById('resultsCard');
+            const loading = document.getElementById('loading');
+            const content = document.getElementById('resultsContent');
+
+            resultsCard.classList.add('show');
+            loading.classList.add('show');
+            content.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const analysis = await response.json();
+                currentAnalysis = analysis;
+                renderResults(analysis);
+
+                loading.classList.remove('show');
+                content.style.display = 'block';
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+                loading.classList.remove('show');
+            }
+        });
+
+        function renderResults(analysis) {
+            document.getElementById('overallValue').textContent = analysis.overall.toFixed(1);
+            document.getElementById('bandDesc').textContent = analysis.band_description;
+
+            // Skills chart
+            document.getElementById('skillsChart').innerHTML = analysis.skills.map(skill => `
+                <div class="skill-bar">
+                    <div class="name">${skill.label.split(' ')[0]}</div>
+                    <div class="value">${skill.score.toFixed(1)}</div>
+                </div>
+            `).join('');
+
+            document.getElementById('summaryText').textContent = analysis.summary;
+
+            document.getElementById('strengthsList').innerHTML = analysis.strengths.map(s => 
+                `<div class="list-item strength-item">✓ ${s.skill}: ${s.score} - ${s.status}</div>`
+            ).join('');
+
+            document.getElementById('weaknessesList').innerHTML = analysis.weaknesses.map(w => 
+                `<div class="list-item weakness-item">⚠ ${w.skill}: ${w.score} - ${w.status}</div>`
+            ).join('');
+
+            document.getElementById('recommendationsList').innerHTML = analysis.recommendations.map(rec => 
+                `<div class="list-item rec-item"><strong>${rec.skill}:</strong><br>` +
+                rec.items.map(item => `→ ${item}`).join('<br>') + '</div>'
+            ).join('');
+
+            document.getElementById('actionList').innerHTML = analysis.action_items.map((action, i) => 
+                `<div style="padding: 8px 0; border-bottom: 1px dashed rgba(0,0,0,0.1);">${i+1}. ${action}</div>`
+            ).join('');
+
+            if (analysis.llm_analysis) {
+                document.getElementById('llmSection').style.display = 'block';
+                document.getElementById('llmText').textContent = analysis.llm_analysis;
+            } else {
+                document.getElementById('llmSection').style.display = 'none';
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('ieltsForm').reset();
+            document.getElementById('resultsCard').classList.remove('show');
+        }
+
+        async function exportReport() {
+            if (!currentAnalysis) return;
+
+            try {
+                const response = await fetch('/api/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ analysis: currentAnalysis })
+                });
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `IELTS_Report_${currentAnalysis.student_name}.txt`;
+                a.click();
+            } catch (error) {
+                alert('Lỗi xuất báo cáo: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
+

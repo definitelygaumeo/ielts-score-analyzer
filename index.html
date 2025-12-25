@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IELTS Score Analyzer - AI Document Summarizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a5f;
+            --secondary: #3d5a80;
+            --accent: #ee6c4d;
+            --accent-light: #f4a261;
+            --light: #e0fbfc;
+            --dark: #293241;
+            --success: #2a9d8f;
+            --warning: #e9c46a;
+            --danger: #e76f51;
+            --gradient-1: linear-gradient(135deg, #1e3a5f 0%, #3d5a80 50%, #98c1d9 100%);
+            --gradient-2: linear-gradient(135deg, #ee6c4d 0%, #f4a261 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: var(--gradient-1);
+            min-height: 100vh;
+            color: var(--dark);
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-shapes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-shapes::before,
+        .bg-shapes::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .bg-shapes::before {
+            width: 600px;
+            height: 600px;
+            background: rgba(238, 108, 77, 0.1);
+            top: -200px;
+            right: -200px;
+        }
+
+        .bg-shapes::after {
+            width: 400px;
+            height: 400px;
+            background: rgba(244, 162, 97, 0.1);
+            bottom: -100px;
+            left: -100px;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(20px, 20px) rotate(5deg); }
+            50% { transform: translate(0, 40px) rotate(0deg); }
+            75% { transform: translate(-20px, 20px) rotate(-5deg); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--light);
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            padding: 35px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.2);
+        }
+
+        .card-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 28px;
+            background: var(--gradient-2);
+            border-radius: 2px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: var(--secondary);
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .skill-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .listening-icon { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .speaking-icon { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .reading-icon { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .writing-icon { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(238, 108, 77, 0.1);
+        }
+
+        input[type="number"]::placeholder {
+            color: #aaa;
+        }
+
+        .score-range {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.8rem;
+            color: #999;
+        }
+
+        .student-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 25px;
+            border-bottom: 2px dashed #e0e0e0;
+        }
+
+        .student-info input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .student-info input:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 4px rgba(61, 90, 128, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px 30px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: var(--gradient-2);
+            color: white;
+            box-shadow: 0 8px 25px rgba(238, 108, 77, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(238, 108, 77, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--light);
+            color: var(--primary);
+            margin-top: 12px;
+        }
+
+        .btn-secondary:hover {
+            background: #d0ecee;
+        }
+
+        /* Results Section */
+        .results-card {
+            display: none;
+        }
+
+        .results-card.show {
+            display: block;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .overall-score {
+            text-align: center;
+            padding: 30px;
+            background: var(--gradient-1);
+            border-radius: 16px;
+            margin-bottom: 25px;
+            color: white;
+        }
+
+        .overall-score .score {
+            font-size: 4rem;
+            font-weight: 700;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .overall-score .label {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .band-description {
+            font-size: 0.95rem;
+            margin-top: 10px;
+            opacity: 0.85;
+        }
+
+        .skills-chart {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .skill-bar {
+            text-align: center;
+            padding: 15px 10px;
+            border-radius: 12px;
+            background: #f5f5f5;
+        }
+
+        .skill-bar .name {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .skill-bar .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .skill-bar .indicator {
+            height: 6px;
+            border-radius: 3px;
+            margin-top: 10px;
+            background: #ddd;
+            overflow: hidden;
+        }
+
+        .skill-bar .indicator-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.8s ease;
+        }
+
+        .skill-bar.excellent .indicator-fill { background: var(--success); }
+        .skill-bar.good .indicator-fill { background: var(--accent-light); }
+        .skill-bar.average .indicator-fill { background: var(--warning); }
+        .skill-bar.weak .indicator-fill { background: var(--danger); }
+
+        .summary-section {
+            margin-bottom: 20px;
+        }
+
+        .summary-section h3 {
+            font-size: 1.1rem;
+            color: var(--primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .summary-section h3 .icon {
+            font-size: 1.3rem;
+        }
+
+        .summary-box {
+            padding: 18px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            border-left: 4px solid var(--accent);
+        }
+
+        .summary-box p {
+            line-height: 1.7;
+            color: #444;
+        }
+
+        .strengths-list, .weaknesses-list, .recommendations-list {
+            list-style: none;
+        }
+
+        .strengths-list li, .weaknesses-list li, .recommendations-list li {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            line-height: 1.5;
+        }
+
+        .strengths-list li {
+            background: rgba(42, 157, 143, 0.1);
+            border: 1px solid rgba(42, 157, 143, 0.2);
+        }
+
+        .strengths-list li::before {
+            content: '✓';
+            color: var(--success);
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .weaknesses-list li {
+            background: rgba(231, 111, 81, 0.1);
+            border: 1px solid rgba(231, 111, 81, 0.2);
+        }
+
+        .weaknesses-list li::before {
+            content: '⚠';
+            font-size: 1.1rem;
+        }
+
+        .recommendations-list li {
+            background: rgba(61, 90, 128, 0.1);
+            border: 1px solid rgba(61, 90, 128, 0.2);
+        }
+
+        .recommendations-list li::before {
+            content: '💡';
+            font-size: 1.1rem;
+        }
+
+        .action-items {
+            background: linear-gradient(135deg, #ffecd2, #fcb69f);
+            padding: 20px;
+            border-radius: 14px;
+            margin-top: 20px;
+        }
+
+        .action-items h4 {
+            color: var(--dark);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-items ul {
+            list-style: none;
+        }
+
+        .action-items li {
+            padding: 8px 0;
+            border-bottom: 1px dashed rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .action-items li:last-child {
+            border-bottom: none;
+        }
+
+        .action-items li::before {
+            content: '→';
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        /* File Upload Section */
+        .upload-section {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 2px dashed #e0e0e0;
+        }
+
+        .file-upload {
+            border: 2px dashed var(--secondary);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(61, 90, 128, 0.03);
+        }
+
+        .file-upload:hover {
+            border-color: var(--accent);
+            background: rgba(238, 108, 77, 0.05);
+        }
+
+        .file-upload .icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .file-upload p {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        /* Export Button */
+        .export-btn {
+            margin-top: 20px;
+            background: var(--primary);
+            color: white;
+        }
+
+        .export-btn:hover {
+            background: var(--secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2.2rem;
+            }
+
+            .skills-chart {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 500px) {
+            .student-info {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e0e0e0;
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-shapes"></div>
+    
+    <div class="container">
+        <header>
+            <h1>🎓 IELTS Score Analyzer</h1>
+            <p class="subtitle">AI-Powered Document Summarizer & Learning Recommendations</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Input Form -->
+            <div class="card input-card">
+                <h2 class="card-title">Nhập Điểm IELTS</h2>
+                
+                <form id="ieltsForm">
+                    <div class="student-info">
+                        <input type="text" id="studentName" placeholder="Tên học viên" required>
+                        <input type="text" id="studentId" placeholder="Mã học viên (tùy chọn)">
+                    </div>
+
+                    <div class="input-group">
+                        <label>
+                            <span class="skill-icon listening-icon">🎧</span>
+                            Listening (Nghe)
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" id="listening" min="0" max="9" step="0.5" placeholder="Nhập điểm..." required>
+                            <span class="score-range">0 - 9</span>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>
+                            <span class="skill-icon speaking-icon">🗣️</span>
+                            Speaking (Nói)
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" id="speaking" min="0" max="9" step="0.5" placeholder="Nhập điểm..." required>
+                            <span class="score-range">0 - 9</span>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>
+                            <span class="skill-icon reading-icon">📖</span>
+                            Reading (Đọc)
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" id="reading" min="0" max="9" step="0.5" placeholder="Nhập điểm..." required>
+                            <span class="score-range">0 - 9</span>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>
+                            <span class="skill-icon writing-icon">✍️</span>
+                            Writing (Viết)
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" id="writing" min="0" max="9" step="0.5" placeholder="Nhập điểm..." required>
+                            <span class="score-range">0 - 9</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <span>🔍</span> Phân Tích & Đánh Giá
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                        <span>🔄</span> Làm Mới
+                    </button>
+                </form>
+
+                <div class="upload-section">
+                    <h3 style="color: var(--secondary); margin-bottom: 15px; font-size: 1rem;">
+                        📁 Hoặc tải lên file điểm
+                    </h3>
+                    <label class="file-upload">
+                        <div class="icon">📄</div>
+                        <p>Kéo thả file hoặc click để chọn<br><small>(Hỗ trợ: CSV, Excel, JSON)</small></p>
+                        <input type="file" id="fileInput" accept=".csv,.xlsx,.json">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="card results-card" id="resultsCard">
+                <h2 class="card-title">Kết Quả Phân Tích</h2>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Đang phân tích dữ liệu...</p>
+                </div>
+
+                <div id="resultsContent">
+                    <div class="overall-score" id="overallScore">
+                        <div class="label">Điểm Tổng Thể</div>
+                        <div class="score" id="overallValue">0.0</div>
+                        <div class="band-description" id="bandDesc"></div>
+                    </div>
+
+                    <div class="skills-chart" id="skillsChart">
+                        <!-- Skills will be rendered here -->
+                    </div>
+
+                    <div class="summary-section">
+                        <h3><span class="icon">📋</span> Tóm Tắt Đánh Giá</h3>
+                        <div class="summary-box" id="summaryBox">
+                            <p id="summaryText"></p>
+                        </div>
+                    </div>
+
+                    <div class="summary-section">
+                        <h3><span class="icon">💪</span> Điểm Mạnh</h3>
+                        <ul class="strengths-list" id="strengthsList"></ul>
+                    </div>
+
+                    <div class="summary-section">
+                        <h3><span class="icon">📉</span> Điểm Cần Cải Thiện</h3>
+                        <ul class="weaknesses-list" id="weaknessesList"></ul>
+                    </div>
+
+                    <div class="summary-section">
+                        <h3><span class="icon">🎯</span> Đề Xuất Cải Thiện</h3>
+                        <ul class="recommendations-list" id="recommendationsList"></ul>
+                    </div>
+
+                    <div class="action-items" id="actionItems">
+                        <h4>📌 Action Items - Kế Hoạch Hành Động</h4>
+                        <ul id="actionList"></ul>
+                    </div>
+
+                    <button class="btn export-btn" onclick="exportReport()">
+                        <span>📥</span> Xuất Báo Cáo PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // IELTS Analysis Logic
+        const skillNames = {
+            listening: 'Nghe (Listening)',
+            speaking: 'Nói (Speaking)',
+            reading: 'Đọc (Reading)',
+            writing: 'Viết (Writing)'
+        };
+
+        const bandDescriptions = {
+            9: 'Expert User - Thành thạo hoàn toàn',
+            8: 'Very Good User - Rất thành thạo',
+            7: 'Good User - Thành thạo',
+            6: 'Competent User - Đủ năng lực',
+            5: 'Modest User - Khiêm tốn',
+            4: 'Limited User - Hạn chế',
+            3: 'Extremely Limited - Rất hạn chế',
+            2: 'Intermittent User - Không ổn định',
+            1: 'Non User - Không sử dụng được'
+        };
+
+        const recommendations = {
+            listening: {
+                low: [
+                    'Nghe podcast tiếng Anh hàng ngày (BBC Learning English, IELTS Liz)',
+                    'Xem phim/series có phụ đề tiếng Anh, sau đó bỏ dần phụ đề',
+                    'Luyện nghe với các bài test IELTS Listening thực tế',
+                    'Tập nghe các giọng khác nhau: British, American, Australian'
+                ],
+                medium: [
+                    'Tăng độ khó bằng cách nghe TED Talks, documentaries',
+                    'Practice note-taking skills khi nghe',
+                    'Làm quen với các dạng câu hỏi IELTS Listening'
+                ],
+                high: [
+                    'Duy trì bằng cách nghe tin tức quốc tế hàng ngày',
+                    'Thử thách bản thân với academic lectures'
+                ]
+            },
+            speaking: {
+                low: [
+                    'Thực hành nói mỗi ngày, có thể tự ghi âm và nghe lại',
+                    'Tìm partner luyện Speaking hoặc sử dụng app như Cambly',
+                    'Học và luyện các topic thường gặp trong IELTS Speaking',
+                    'Xây dựng vocabulary theo chủ đề'
+                ],
+                medium: [
+                    'Tập trả lời câu hỏi Part 2 với cue card',
+                    'Học cách phát triển ý tưởng và đưa ví dụ',
+                    'Cải thiện pronunciation và intonation'
+                ],
+                high: [
+                    'Thực hành tranh luận và thảo luận các chủ đề phức tạp',
+                    'Học idioms và advanced vocabulary'
+                ]
+            },
+            reading: {
+                low: [
+                    'Đọc sách báo tiếng Anh hàng ngày (The Guardian, BBC News)',
+                    'Bắt đầu với các bài đọc ngắn, từ từ tăng độ dài',
+                    'Học kỹ năng skimming và scanning',
+                    'Xây dựng vocabulary thông qua đọc và ghi chép từ mới'
+                ],
+                medium: [
+                    'Làm quen với các dạng bài Reading IELTS',
+                    'Tập đọc nhanh và tìm thông tin hiệu quả',
+                    'Đọc academic articles và research papers'
+                ],
+                high: [
+                    'Đọc các tài liệu chuyên ngành phức tạp',
+                    'Cải thiện tốc độ đọc mà vẫn hiểu sâu nội dung'
+                ]
+            },
+            writing: {
+                low: [
+                    'Viết nhật ký bằng tiếng Anh mỗi ngày',
+                    'Học cấu trúc bài luận IELTS Task 1 và Task 2',
+                    'Luyện viết câu phức và sử dụng linking words',
+                    'Nhờ giáo viên hoặc native speaker chữa bài viết'
+                ],
+                medium: [
+                    'Tập phân tích đề và lập dàn ý trước khi viết',
+                    'Học cách paraphrase và sử dụng synonyms',
+                    'Viết ít nhất 2-3 bài essay mỗi tuần'
+                ],
+                high: [
+                    'Tập viết các bài luận phức tạp với nhiều góc nhìn',
+                    'Cải thiện academic vocabulary và formal expressions'
+                ]
+            }
+        };
+
+        function calculateOverall(scores) {
+            const sum = scores.listening + scores.speaking + scores.reading + scores.writing;
+            const avg = sum / 4;
+            return Math.round(avg * 2) / 2; // Round to nearest 0.5
+        }
+
+        function getScoreLevel(score) {
+            if (score >= 7) return 'high';
+            if (score >= 5) return 'medium';
+            return 'low';
+        }
+
+        function getSkillClass(score) {
+            if (score >= 7) return 'excellent';
+            if (score >= 6) return 'good';
+            if (score >= 5) return 'average';
+            return 'weak';
+        }
+
+        function getBandDesc(score) {
+            const band = Math.floor(score);
+            return bandDescriptions[band] || bandDescriptions[Math.max(1, Math.min(9, band))];
+        }
+
+        function analyzeScores(scores, studentName) {
+            const overall = calculateOverall(scores);
+            const skillArray = [
+                { name: 'listening', score: scores.listening, label: skillNames.listening },
+                { name: 'speaking', score: scores.speaking, label: skillNames.speaking },
+                { name: 'reading', score: scores.reading, label: skillNames.reading },
+                { name: 'writing', score: scores.writing, label: skillNames.writing }
+            ];
+
+            // Sort by score
+            const sorted = [...skillArray].sort((a, b) => b.score - a.score);
+            const strengths = sorted.filter(s => s.score >= overall);
+            const weaknesses = sorted.filter(s => s.score < overall);
+
+            // Generate summary
+            let summary = `Học viên ${studentName} đạt điểm IELTS tổng thể ${overall}. `;
+            
+            if (strengths.length > 0) {
+                summary += `Có khả năng ${strengths.map(s => s.label.split(' ')[0]).join(' và ')} tốt`;
+                if (strengths[0].score >= 7) {
+                    summary += ` với điểm nổi bật ở kỹ năng ${strengths[0].label.split(' ')[0]} (${strengths[0].score})`;
+                }
+                summary += '. ';
+            }
+
+            if (weaknesses.length > 0) {
+                summary += `Tuy nhiên, ${weaknesses.map(s => s.label.split(' ')[0]).join(' và ')} còn hạn chế`;
+                summary += ` do có thể chưa thường xuyên luyện tập các kỹ năng này.`;
+            }
+
+            // Generate recommendations
+            const recs = [];
+            weaknesses.forEach(skill => {
+                const level = getScoreLevel(skill.score);
+                const skillRecs = recommendations[skill.name][level];
+                recs.push({
+                    skill: skill.label,
+                    items: skillRecs
+                });
+            });
+
+            // Generate action items
+            const actions = [];
+            if (weaknesses.length > 0) {
+                const weakest = weaknesses[weaknesses.length - 1];
+                actions.push(`Ưu tiên cải thiện kỹ năng ${weakest.label.split(' ')[0]} (hiện tại: ${weakest.score})`);
+            }
+            actions.push(`Đặt mục tiêu đạt ${Math.min(9, overall + 0.5)} trong 3 tháng tới`);
+            actions.push('Luyện tập ít nhất 2 tiếng mỗi ngày với các kỹ năng yếu');
+            actions.push('Làm mock test đầy đủ 2 tuần/lần để theo dõi tiến độ');
+
+            return {
+                overall,
+                skills: skillArray,
+                strengths,
+                weaknesses,
+                summary,
+                recommendations: recs,
+                actions
+            };
+        }
+
+        function renderResults(analysis) {
+            // Overall score
+            document.getElementById('overallValue').textContent = analysis.overall.toFixed(1);
+            document.getElementById('bandDesc').textContent = getBandDesc(analysis.overall);
+
+            // Skills chart
+            const skillsChart = document.getElementById('skillsChart');
+            skillsChart.innerHTML = analysis.skills.map(skill => `
+                <div class="skill-bar ${getSkillClass(skill.score)}">
+                    <div class="name">${skill.label.split(' ')[0]}</div>
+                    <div class="value">${skill.score.toFixed(1)}</div>
+                    <div class="indicator">
+                        <div class="indicator-fill" style="width: ${(skill.score / 9) * 100}%"></div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Summary
+            document.getElementById('summaryText').textContent = analysis.summary;
+
+            // Strengths
+            const strengthsList = document.getElementById('strengthsList');
+            strengthsList.innerHTML = analysis.strengths.map(s => 
+                `<li>${s.label}: ${s.score} - ${s.score >= 7 ? 'Xuất sắc' : 'Tốt'}</li>`
+            ).join('');
+
+            // Weaknesses
+            const weaknessesList = document.getElementById('weaknessesList');
+            weaknessesList.innerHTML = analysis.weaknesses.map(s => 
+                `<li>${s.label}: ${s.score} - Cần cải thiện</li>`
+            ).join('');
+
+            // Recommendations
+            const recommendationsList = document.getElementById('recommendationsList');
+            recommendationsList.innerHTML = analysis.recommendations.map(rec => 
+                rec.items.map(item => `<li><strong>${rec.skill.split(' ')[0]}:</strong> ${item}</li>`).join('')
+            ).join('');
+
+            // Action items
+            const actionList = document.getElementById('actionList');
+            actionList.innerHTML = analysis.actions.map(action => 
+                `<li>${action}</li>`
+            ).join('');
+        }
+
+        // Form submission
+        document.getElementById('ieltsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const studentName = document.getElementById('studentName').value;
+            const scores = {
+                listening: parseFloat(document.getElementById('listening').value),
+                speaking: parseFloat(document.getElementById('speaking').value),
+                reading: parseFloat(document.getElementById('reading').value),
+                writing: parseFloat(document.getElementById('writing').value)
+            };
+
+            // Show results card with loading
+            const resultsCard = document.getElementById('resultsCard');
+            const loading = document.getElementById('loading');
+            const content = document.getElementById('resultsContent');
+
+            resultsCard.classList.add('show');
+            loading.classList.add('show');
+            content.style.display = 'none';
+
+            // Simulate AI processing
+            setTimeout(() => {
+                const analysis = analyzeScores(scores, studentName);
+                renderResults(analysis);
+                
+                loading.classList.remove('show');
+                content.style.display = 'block';
+            }, 1500);
+        });
+
+        function resetForm() {
+            document.getElementById('ieltsForm').reset();
+            document.getElementById('resultsCard').classList.remove('show');
+        }
+
+        // File upload handling
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                alert(`Đã chọn file: ${file.name}\n\nChức năng xử lý file sẽ parse dữ liệu và tự động điền vào form.`);
+                // Here you would implement CSV/Excel parsing
+            }
+        });
+
+        // Export report
+        function exportReport() {
+            const studentName = document.getElementById('studentName').value;
+            const overall = document.getElementById('overallValue').textContent;
+            const summary = document.getElementById('summaryText').textContent;
+            
+            const reportContent = `
+IELTS SCORE ANALYSIS REPORT
+===========================
+Học viên: ${studentName}
+Ngày: ${new Date().toLocaleDateString('vi-VN')}
+
+ĐIỂM TỔNG THỂ: ${overall}
+
+TÓM TẮT:
+${summary}
+
+${document.getElementById('strengthsList').innerText ? 'ĐIỂM MẠNH:\n' + document.getElementById('strengthsList').innerText : ''}
+
+${document.getElementById('weaknessesList').innerText ? 'ĐIỂM CẦN CẢI THIỆN:\n' + document.getElementById('weaknessesList').innerText : ''}
+
+ĐỀ XUẤT:
+${document.getElementById('recommendationsList').innerText}
+
+KẾ HOẠCH HÀNH ĐỘNG:
+${document.getElementById('actionList').innerText}
+            `;
+
+            // Create and download file
+            const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `IELTS_Report_${studentName}_${new Date().toISOString().split('T')[0]}.txt`;
+            link.click();
+        }
+
+        // Demo: Auto-fill with sample data
+        function demoFill() {
+            document.getElementById('studentName').value = 'Nguyễn Văn A';
+            document.getElementById('studentId').value = 'SV001';
+            document.getElementById('listening').value = '7.5';
+            document.getElementById('speaking').value = '6.5';
+            document.getElementById('reading').value = '5.5';
+            document.getElementById('writing').value = '5.0';
+        }
+    </script>
+</body>
+</html>
+
