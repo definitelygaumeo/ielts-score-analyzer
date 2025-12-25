@@ -48,7 +48,7 @@
 ### Cách 1: Cài đặt tự động
 ```bash
 # Clone repository
-git clone https://github.com/YOUR_USERNAME/ielts-score-analyzer.git
+git clone https://github.com/definitelygaumeo/ielts-score-analyzer.git
 cd ielts-score-analyzer
 
 # Chạy script cài đặt
